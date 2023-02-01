@@ -168,12 +168,24 @@ table_with_row_labels(m::AbstractAxisArrayTable; row_label_header=:time) =
 CSV.write(file, m::AbstractAxisArrayTable; row_label_header=:time, kw...) =
     CSV.write(file, table_with_row_labels(m; row_label_header); kw...)
 
-# Define a Plots.jl recipe for plotting a single column
+# Plots recipe for plotting a whole table, one or more columns
 @recipe function f(m::AbstractAxisArrayTable)
-    col = only(column_labels(m))
-    label --> string(col)
+    cols = column_labels(m)
+    names = string.(cols)
+    label --> reshape(names, 1, :)
     x = row_labels(m)
-    y = data(m)[:, col]
+    y = data(m)[:, cols]
+    @show y
+    x, y
+end
+
+# Plots recipe for multiple columns in the same table 
+@recipe function f(m::AbstractAxisArrayTable, col_names::Vector{Symbol})
+    # TODO graceful faliure when column does not exist    
+    names = string.(col_names)
+    label --> reshape(names, 1, :)
+    x = row_labels(m)
+    y = data(m)[:, col_names]
     x, y
 end
 
