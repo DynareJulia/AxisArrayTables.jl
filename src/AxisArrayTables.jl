@@ -168,13 +168,27 @@ table_with_row_labels(m::AbstractAxisArrayTable; row_label_header=:time) =
 CSV.write(file, m::AbstractAxisArrayTable; row_label_header=:time, kw...) =
     CSV.write(file, table_with_row_labels(m; row_label_header); kw...)
 
-# Define a Plots.jl recipe for plotting a single column
-@recipe function f(m::AbstractAxisArrayTable)
-    col = only(column_labels(m))
-    label --> string(col)
-    x = row_labels(m)
-    y = data(m)[:, col]
-    x, y
+# Plots user recipe for plotting a variable number of AxisArrayTables
+# example syntax: plot(t), plot(t1.a, t2, label=["T1 A" "T2 A" "T2 B"]) 
+@recipe function f(m::AbstractAxisArrayTable...)
+    all_cols = nothing
+    all_labels = []
+    for t in m
+        mat = data(t)
+        all_cols = isnothing(all_cols) ? mat : hcat(all_cols, mat)
+        labels = string.(column_labels(t))
+        append!(all_labels, labels)
+    end
+
+    queried_labels = get(plotattributes, :label, [])
+    if isempty(queried_labels)
+        label --> reshape(all_labels, 1, :)
+    elseif length(queried_labels) != size(all_cols)[2]
+        @warn "The number of labels is different than the number of variables to be plotted"
+    end
+
+    x = row_labels(m[1])
+    x, all_cols
 end
 
 end
