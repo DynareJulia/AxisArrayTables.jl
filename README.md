@@ -19,9 +19,11 @@ column_labels(m::AbstractAxisArrayTable)
 ```
 
 ## Lag, lead and diff
+```
 lag(m::AbstractAxisArrayTable, args...)
 lead(m::AbstractAxisArrayTable, args...)
 ```
+
 ## Example
 ```
 julia> using AxisArrayTables
