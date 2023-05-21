@@ -37,7 +37,13 @@ column_labels(m::AbstractAxisArrayTable) = named_axes(m)[2]
 
 # Access by dot syntax `data.var3`
 Base.propertynames(m::AbstractAxisArrayTable) = column_labels(m)
-Base.getproperty(m::AbstractAxisArrayTable, col::Symbol) = getindex(m, :, col)
+#Base.getproperty(m::AbstractAxisArrayTable, col::Symbol) = getindex(m, :, col)
+#Base.dotgetproperty(m::AbstractAxisArrayTable, col::Symbol) = view(getfield(m, :data), :, col) 
+function Base.getproperty(m::AbstractAxisArrayTable, col::Symbol)
+    a = data(m)
+    ix = AxisArrays.to_index(a, :, col)
+    return AxisArrayTable(view(a, :, ix[2]:ix[2]))
+end
 
 # Conform to the AbstractMatrix interface
 # https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
@@ -124,6 +130,11 @@ Base.setindex!(m::AbstractAxisArrayTable, v, col::Symbol) = setindex!(m, v, :, c
 ShiftedArrays.lead(m::AbstractAxisArrayTable, args...) = AxisArrayTable(lead(data(m), args...), named_axes(m)...)
 ShiftedArrays.lag(m::AbstractAxisArrayTable, args...) = AxisArrayTable(lag(data(m), args...), named_axes(m)...)
 Base.diff(m::AbstractAxisArrayTable, args...) = m - lag(m, args...)
+
+function allowmissing(m::AbstractAxisArrayTable)
+    data = getfield(m, :data).data
+    return AxisArrayTable(Array{Union{eltype(data), Missing}}(data), row_labels(m), column_labels(m))
+end
 
 # Dynamically merge tables and adjust axes as needed
 function Base.merge(tables::Vararg{AbstractAxisArrayTable}) # TODO revise for simplicity and performance
